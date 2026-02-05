@@ -11,6 +11,7 @@ export type WindowConfig = {
 	pos: { x: number; y: number };
 	size: { width: number; height: number };
 	open: boolean;
+	minimized: boolean;
 };
 
 export type WindowResizeDir = "e" | "s" | "se" | "w" | "sw";

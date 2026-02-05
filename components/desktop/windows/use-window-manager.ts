@@ -1,7 +1,9 @@
 import type { Window, WindowConfig } from "@/components/desktop/windows/types";
+import { NAVBAR_HEIGHT } from "@/constants/general";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { DEFAULT_WINDOW_SIZE, MAX_WINDOW_SIZE, MIN_WINDOW_SIZE } from "./constants";
+import { DEFAULT_WINDOW_SIZE, MAX_WINDOW_SIZE, MIN_WINDOW_SIZE, SIDEBAR_MANAGER_WIDTH } from "./constants";
+import { getMiddleOfScreenPos } from "./utils";
 
 function strManip(str: string, mode: "shift" | "unshift"): string {
 	let result = "";
@@ -15,7 +17,7 @@ function serializeWindowParams(windowCfg: WindowConfig[]) {
 	return windowCfg
 		.map(
 			cfg =>
-				`${strManip(cfg.id, "shift")}:${cfg.pos.x}:${cfg.pos.y}:${cfg.size.width}:${cfg.size.height}:${cfg.open ? 1 : 0}`,
+				`${strManip(cfg.id, "shift")}:${cfg.pos.x}:${cfg.pos.y}:${cfg.size.width}:${cfg.size.height}:${cfg.open ? 1 : 0}:${cfg.minimized ? 1 : 0}`,
 		)
 		.join("|");
 }
@@ -23,7 +25,7 @@ function serializeWindowParams(windowCfg: WindowConfig[]) {
 function deserializeWindowParams(param: string): WindowConfig[] {
 	if (!param) return [];
 	return param.split("|").map(part => {
-		const [id, xStr, yStr, widthStr, heightStr, openStr] = part.split(":");
+		const [id, xStr, yStr, widthStr, heightStr, openStr, minimizedStr] = part.split(":");
 		return {
 			id: strManip(id, "unshift") as Window,
 			pos: { x: parseInt(xStr, 10), y: parseInt(yStr, 10) },
@@ -32,22 +34,9 @@ function deserializeWindowParams(param: string): WindowConfig[] {
 				height: parseInt(heightStr, 10) || DEFAULT_WINDOW_SIZE.height,
 			},
 			open: openStr === "1",
+			minimized: minimizedStr === "1",
 		};
 	});
-}
-
-function getMiddleOfScreenPos(windowSize: { width: number; height: number }) {
-	if (typeof window === "undefined") {
-		return { x: 0, y: 0 };
-	}
-
-	const screenWidth = window.innerWidth;
-	const screenHeight = window.innerHeight - 60; // Account for taskbar height
-
-	return {
-		x: Math.max(0, (screenWidth - windowSize.width) / 2),
-		y: Math.max(0, (screenHeight - windowSize.height) / 2),
-	};
 }
 
 export function useWindowManager() {
@@ -58,17 +47,31 @@ export function useWindowManager() {
 	const [focusedWindowId, setFocusedWindowId] = useState<Window | null>(null);
 	const isUpdatingFromDrag = useRef(false);
 	const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const [windowManagerSidebarOpen, _setWindowManagerSidebarOpen] = useState(false);
 
 	function isWindowOpen(windowId: Window) {
 		return windows.some(w => w.id === windowId && w.open);
 	}
 
 	function openWindow(windowId: Window) {
-		if (isWindowOpen(windowId)) return;
+		if (isWindowOpen(windowId)) {
+			setFocusedWindowId(windowId);
+			setWindowMinimized(windowId, false);
+			return;
+		}
 
 		const existingWindow = windows.find(w => w.id === windowId);
 		let newWindowState: WindowConfig[];
 		let startingPos = getMiddleOfScreenPos(DEFAULT_WINDOW_SIZE);
+
+		if (typeof window !== "undefined") {
+			const maxX = window.innerWidth - DEFAULT_WINDOW_SIZE.width;
+			const maxY = window.innerHeight - DEFAULT_WINDOW_SIZE.height;
+			startingPos = {
+				x: Math.max(0, Math.min(startingPos.x, maxX)),
+				y: Math.max(NAVBAR_HEIGHT - 1, Math.min(startingPos.y, maxY)),
+			};
+		}
 
 		const offset = 30;
 		let attempts = 0;
@@ -96,12 +99,18 @@ export function useWindowManager() {
 						pos: startingPos,
 						size: DEFAULT_WINDOW_SIZE,
 						open: true,
+						minimized: false,
 					}
 				:	w,
 			);
 		} else {
-			newWindowState = [...windows, { id: windowId, pos: startingPos, size: DEFAULT_WINDOW_SIZE, open: true }];
+			newWindowState = [
+				...windows,
+				{ id: windowId, pos: startingPos, size: DEFAULT_WINDOW_SIZE, open: true, minimized: false },
+			];
 		}
+
+		setWindows(newWindowState);
 
 		const newParams = new URLSearchParams(searchParams.toString());
 
@@ -128,8 +137,8 @@ export function useWindowManager() {
 		setTimeout(() => {
 			const pos = getMiddleOfScreenPos(DEFAULT_WINDOW_SIZE);
 			const size = DEFAULT_WINDOW_SIZE;
-			const newWindowState = windows.map(w => (w.id === windowId ? { ...w, open: false, pos, size } : w));
-			setWindows(newWindowState);
+			const windowStateAfterClose = windows.map(w => (w.id === windowId ? { ...w, open: false, pos, size } : w));
+			setWindows(windowStateAfterClose);
 		}, 300);
 	}
 
@@ -197,22 +206,66 @@ export function useWindowManager() {
 	function getWindow(windowId: Window): WindowConfig {
 		const found = windows.find(w => w.id === windowId);
 		if (found) return found;
-		return { id: windowId, pos: getMiddleOfScreenPos(DEFAULT_WINDOW_SIZE), size: DEFAULT_WINDOW_SIZE, open: false };
+		return {
+			id: windowId,
+			pos: getMiddleOfScreenPos(DEFAULT_WINDOW_SIZE),
+			size: DEFAULT_WINDOW_SIZE,
+			open: false,
+			minimized: false,
+		};
 	}
 
-	function useWindow(windowId: Window) {
+	function useWindow(windowId: Window): WindowConfig {
 		return (
 			windows.find(w => w.id === windowId) || {
 				id: windowId,
 				pos: getMiddleOfScreenPos(DEFAULT_WINDOW_SIZE),
 				size: DEFAULT_WINDOW_SIZE,
 				open: false,
+				minimized: false,
 			}
 		);
 	}
 
+	function setWindowMinimized(windowId: Window, minimized: boolean) {
+		const updatedWindows = windows.map(w => (w.id === windowId ? { ...w, minimized } : w));
+		setWindows(updatedWindows);
+		updateUrlParams(updatedWindows);
+	}
+
+	const setWindowManagerSidebarOpen = useCallback(
+		(open: boolean) => {
+			_setWindowManagerSidebarOpen(open);
+			// if there's a window clipping the sidebar, push it over
+			if (open) {
+				const pushoverWidth = SIDEBAR_MANAGER_WIDTH + 20; // extra 20px buffer
+
+				const updatedWindows = windows.map(w => {
+					if (
+						w.pos.x + w.size.width > window.innerWidth - pushoverWidth &&
+						w.open &&
+						!w.minimized &&
+						w.pos.x !== 0
+					) {
+						return {
+							...w,
+							pos: {
+								x: Math.max(0, window.innerWidth - pushoverWidth - w.size.width),
+								y: w.pos.y,
+							},
+						};
+					}
+					return w;
+				});
+				setWindows(updatedWindows);
+				updateUrlParams(updatedWindows);
+			}
+		},
+		[windows, updateUrlParams],
+	);
+
 	useLayoutEffect(() => {
-		if (isUpdatingFromDrag.current) return;
+		if (isUpdatingFromDrag.current || typeof window === "undefined") return;
 
 		if (!windowsParam) {
 			// eslint-disable-next-line react-hooks/set-state-in-effect
@@ -220,11 +273,27 @@ export function useWindowManager() {
 			return;
 		}
 
-		setWindows(deserializeWindowParams(windowsParam));
+		const params = deserializeWindowParams(windowsParam);
+
+		// bound positions to window size
+		const boundedParams = params.map(cfg => {
+			const maxX = window.innerWidth - cfg.size.width;
+			const maxY = window.innerHeight - cfg.size.height;
+
+			return {
+				...cfg,
+				pos: {
+					x: Math.max(0, Math.min(cfg.pos.x, maxX)),
+					y: Math.max(NAVBAR_HEIGHT - 1, Math.min(cfg.pos.y, maxY)),
+				},
+			};
+		});
+
+		setWindows(boundedParams);
 	}, [windowsParam, setWindows]);
 
 	useEffect(() => {
-		console.log(`windows: ${JSON.stringify(windows)}`);
+		console.log("Windows state changed:", windows);
 	}, [windows]);
 
 	return {
@@ -239,5 +308,8 @@ export function useWindowManager() {
 		updateWindowSizeAndPos,
 		focusedWindowId,
 		setFocusedWindowId,
+		setWindowMinimized,
+		windowManagerSidebarOpen,
+		setWindowManagerSidebarOpen,
 	};
 }

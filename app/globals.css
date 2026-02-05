@@ -10,6 +10,14 @@
 	@apply duration-120 font-sans hover:-translate-y-px active:translate-y-0 transition-transform;
 }
 
+@utility menu {
+	@apply rounded-sm shadow-md border border-neutral/35 duration-120;
+}
+
+a {
+	@apply duration-120 font-sans;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -64,4 +72,18 @@ body {
 
 .window-exit {
 	animation: window-exit 0.15s ease-in forwards;
+}
+
+.tooltip[data-tip]:before,
+.tooltip:after {
+	z-index: 1001;
+}
+
+.tooltip & > .tooltip-content, &[data-tip]:before {
+	transition-delay: 500ms !important;
+}
+
+.tooltip-delay:hover[data-tip]:before,
+.tooltip-delay:hover:after {
+	transition-delay: 500ms !important;
 }

@@ -3,6 +3,7 @@ import { DesktopIcon } from "@/components/desktop/desktop-icon";
 import { AboutMeWindow } from "@/components/desktop/windows/about-me-window";
 import { IntroWindow } from "@/components/desktop/windows/intro-window";
 import { useWindowContext } from "@/components/desktop/windows/window-context";
+import { NAVBAR_HEIGHT } from "@/constants/general";
 import { DndContext, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { FileTextIcon } from "@phosphor-icons/react";
 import { useState } from "react";
@@ -10,8 +11,8 @@ import { useState } from "react";
 export default function Home() {
 	const [boundsRef, setBoundsRef] = useState<HTMLDivElement | null>(null);
 	const [iconPositions, setIconPositions] = useState<Record<string, { x: number; y: number }>>({
-		introduction: { x: 0, y: 0 },
-		"about-me": { x: 0, y: 100 },
+		introduction: { x: 20, y: 25 },
+		"about-me": { x: 20, y: 125 },
 	});
 	const { openWindow, updateWindowPos, getWindow } = useWindowContext();
 
@@ -22,7 +23,6 @@ export default function Home() {
 	);
 
 	function handleDragEnd(event: DragEndEvent) {
-		if (!boundsRef) return;
 		const { id } = event.active;
 		const delta = event.delta;
 
@@ -30,13 +30,30 @@ export default function Home() {
 			const windowId = id.toString().replace("window-modal-", "");
 			const currentWindow = getWindow(windowId);
 
+			let newY = currentWindow.pos.y + delta.y;
+			let newX = currentWindow.pos.x + delta.x;
+
+			// prevent moving under taskbar
+			if (newY < NAVBAR_HEIGHT) {
+				newY = NAVBAR_HEIGHT;
+			} else if (newY + currentWindow.size.height > window.innerHeight) {
+				newY = window.innerHeight - currentWindow.size.height;
+			}
+
+			if (newX < 0) {
+				newX = 0;
+			} else if (newX + currentWindow.size.width > window.innerWidth) {
+				newX = window.innerWidth - currentWindow.size.width;
+			}
+
 			updateWindowPos(windowId, {
-				x: currentWindow.pos.x + delta.x,
-				y: currentWindow.pos.y + delta.y,
+				x: newX,
+				y: newY,
 			});
 			return;
 		}
 
+		if (!boundsRef) return;
 		const boundsRect = boundsRef.getBoundingClientRect();
 		const iconWidth = 80; // w-20 = 80px
 		const iconHeight = 80; // h-20
@@ -70,7 +87,7 @@ export default function Home() {
 				}}
 			/>
 			<div className="absolute inset-0 z-0 bg-secondary/20" />
-			<div ref={setBoundsRef} className="fixed left-0 right-0 bottom-0 top-15 z-2 w-full h-full">
+			<div ref={setBoundsRef} className="absolute inset-0 z-2 w-full h-full">
 				<DndContext sensors={sensors} onDragEnd={handleDragEnd}>
 					<DesktopIcon
 						id="introduction"

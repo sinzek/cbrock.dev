@@ -1,3 +1,4 @@
+import { NAVBAR_HEIGHT } from "@/constants/general";
 import { MAX_WINDOW_SIZE, MIN_WINDOW_SIZE } from "./constants";
 import type { WindowConfig, WindowResizeDir } from "./types";
 
@@ -33,5 +34,19 @@ export function calcNewSizeAndPosFromResize(
 			x: isWestResize ? startWindowPos.x - actualWidthChange : startWindowPos.x,
 			y: startWindowPos.y,
 		},
+	};
+}
+
+export function getMiddleOfScreenPos(windowSize: { width: number; height: number }) {
+	if (typeof window === "undefined") {
+		return { x: 50, y: 50 };
+	}
+
+	const screenWidth = window.innerWidth;
+	const screenHeight = window.innerHeight;
+
+	return {
+		x: Math.max(0, (screenWidth - windowSize.width) / 2),
+		y: Math.max(NAVBAR_HEIGHT + 20, (screenHeight - windowSize.height) / 2),
 	};
 }

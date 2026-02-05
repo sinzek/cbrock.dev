@@ -1,19 +1,23 @@
 "use client";
 
-import { CHASE_EMAIL } from "@/constants/general";
-import { ArrowUpRightIcon } from "@phosphor-icons/react";
+import { CHASE_EMAIL, NAVBAR_HEIGHT } from "@/constants/general";
+import { ArrowUpRightIcon, BrowsersIcon, type Icon } from "@phosphor-icons/react";
 import Link from "next/link";
+import type { MouseEventHandler } from "react";
+import { useWindowContext } from "../desktop/windows/window-context";
 
 type NavItem =
 	| {
 			type: "link";
-			label: string;
+			label?: string;
+			icon?: Icon;
 			href: string;
 	  }
 	| {
 			type: "action";
-			label: string;
-			onClick: (e: MouseEvent) => void;
+			label?: string;
+			icon?: Icon;
+			onClick: MouseEventHandler<HTMLButtonElement>;
 	  };
 
 const navItems: NavItem[] = [
@@ -45,33 +49,65 @@ const navItems: NavItem[] = [
 ];
 
 export function Navbar() {
+	const { windows, windowManagerSidebarOpen, setWindowManagerSidebarOpen } = useWindowContext();
+	const openWindows = Object.values(windows).filter(w => w.open);
+
 	return (
-		<nav className="navbar z-10 bg-base-200 px-4 border-b border-b-neutral/35 min-h-12">
-			<div className="mr-6">
-				<Link href="/" className="text-base-content text-xl uppercase font-mono font-medium">
-					Chase Brock
-				</Link>
+		<nav
+			className="navbar justify-between z-10 bg-base-200 px-4 border-b border-b-neutral/35"
+			style={{
+				height: `${NAVBAR_HEIGHT}px`,
+				minHeight: `${NAVBAR_HEIGHT}px`,
+				maxHeight: `${NAVBAR_HEIGHT}px`,
+			}}
+		>
+			<div className="flex items-center">
+				<div className="mr-6">
+					<Link href="/" className="text-base-content text-xl uppercase font-mono font-medium">
+						Chase Brock
+					</Link>
+				</div>
+				<div className="flex-none gap-2">
+					{navItems.map((item, index) => (
+						<NavItem key={index} item={item} />
+					))}
+				</div>
 			</div>
-			<div className="flex-none gap-2">
-				{navItems.map((item, index) => (
-					<NavItem key={index} item={item} />
-				))}
+			<div className="flex items-center">
+				<NavItem
+					item={{
+						type: "action",
+						label:
+							openWindows.length > 0 ?
+								`${openWindows.length} Window${openWindows.length > 1 ? "s" : ""}`
+							:	"Window Manager",
+						icon: BrowsersIcon,
+						onClick: () => setWindowManagerSidebarOpen(!windowManagerSidebarOpen),
+					}}
+				/>
 			</div>
 		</nav>
 	);
 }
 
 function NavItem({ item }: { item: NavItem }) {
+	const className =
+		"btn btn-sm btn-outline border-transparent hover:border-neutral/50 bg-transparent hover:bg-base-300";
+
 	return (
 		<>
 			{item.type === "action" ?
-				<button className="btn btn-sm">{item.label}</button>
+				<button className={className} onClick={item.onClick}>
+					{item.icon && <item.icon className="size-4.5" />}
+					{item.label}
+				</button>
 			:	<a
 					href={item.href}
-					className="btn btn-sm btn-outline border-transparent hover:border-neutral/50 bg-transparent hover:bg-base-300"
+					className={className}
 					target={item.href.startsWith("http") ? "_blank" : "_self"}
 					rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
 				>
+					{item.icon && <item.icon className="size-4.5" />}
 					{item.label}
 					{item.href.startsWith("http") && <ArrowUpRightIcon weight="bold" />}
 				</a>
