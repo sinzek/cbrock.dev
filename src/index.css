@@ -21,7 +21,6 @@
   --color-ink-950: oklch(0.155 0.016 260);
   --color-ink-1000: oklch(0.115 0.014 260);
 
-  /* Signature accent — cyan */
   --color-accent-50: oklch(0.982 0.013 200);
   --color-accent-100: oklch(0.955 0.03 199);
   --color-accent-200: oklch(0.91 0.055 198);
@@ -44,7 +43,6 @@
     scroll-behavior: smooth;
   }
 
-  /* Keep anchor targets clear of the sticky navbar. */
   section[id] {
     scroll-margin-top: 5rem;
   }
