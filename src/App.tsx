@@ -121,7 +121,7 @@ export default function App() {
 						onClick={() => {
 							window.scrollTo({ top: 0, behavior: "smooth" });
 						}}
-						className="text-accent-300 mt-2 hover:text-accent-200 flex items-center gap-1.5"
+						className="text-accent-300 mt-2 hover:text-accent-200 flex items-center gap-1.5 transition-colors"
 					>
 						Back to top
 						<ArrowUpIcon />
