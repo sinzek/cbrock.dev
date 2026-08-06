@@ -1,0 +1,82 @@
+@import "tailwindcss";
+@import "@fontsource-variable/jetbrains-mono";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo,
+    monospace;
+
+  --color-ink-50: oklch(0.985 0.002 260);
+  --color-ink-100: oklch(0.968 0.004 260);
+  --color-ink-200: oklch(0.925 0.006 260);
+  --color-ink-300: oklch(0.868 0.008 260);
+  --color-ink-400: oklch(0.706 0.012 260);
+  --color-ink-500: oklch(0.565 0.014 260);
+  --color-ink-600: oklch(0.462 0.016 260);
+  --color-ink-700: oklch(0.382 0.018 260);
+  --color-ink-750: oklch(0.325 0.018 260);
+  --color-ink-800: oklch(0.285 0.018 260);
+  --color-ink-900: oklch(0.215 0.017 260);
+  --color-ink-950: oklch(0.155 0.016 260);
+  --color-ink-1000: oklch(0.115 0.014 260);
+
+  /* Signature accent — cyan */
+  --color-accent-50: oklch(0.982 0.013 200);
+  --color-accent-100: oklch(0.955 0.03 199);
+  --color-accent-200: oklch(0.91 0.055 198);
+  --color-accent-300: oklch(0.86 0.08 197);
+  --color-accent-400: oklch(0.79 0.1 196);
+  --color-accent-500: oklch(0.72 0.11 195);
+  --color-accent-600: oklch(0.63 0.105 197);
+  --color-accent-700: oklch(0.53 0.09 199);
+  --color-accent-800: oklch(0.44 0.072 201);
+  --color-accent-900: oklch(0.37 0.058 203);
+  --color-accent-950: oklch(0.25 0.042 205);
+}
+
+
+@layer base {
+  html {
+    font-family: var(--font-mono);
+    font-feature-settings: "calt" 1, "liga" 1;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  /* Keep anchor targets clear of the sticky navbar. */
+  section[id] {
+    scroll-margin-top: 5rem;
+  }
+
+  body {
+    background-color: var(--color-ink-950);
+    color: var(--color-ink-100);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: var(--color-accent-500);
+    color: var(--color-ink-100);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-500);
+    outline-offset: 2px;
+  }
+
+  * {
+    border-color: var(--color-ink-750);
+  }
+
+  a {
+    color: var(--color-accent-300);
+    font-weight: 600;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+}
+
