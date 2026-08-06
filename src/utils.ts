@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
 
-/* Each color is the technology's brand color, lightened where the original is
-   too dark to read against the ink background. */
 export const Technologies = {
 	typescript: {
 		label: "TypeScript",
@@ -135,8 +133,6 @@ export type Project = {
 		label: string;
 		href: string;
 		variant: "primary" | "secondary";
-		/* Routes within this site, navigated client-side instead of opening a
-		   new tab. */
 		internal?: boolean;
 	}[];
 	releaseLabel: string;
